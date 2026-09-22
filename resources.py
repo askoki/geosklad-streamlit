@@ -46,10 +46,18 @@ def aoi_view(extent, pad_m):
     selected = aoi(extent, pad_m)
     lake = aoi_module.lake_geom()
     lon, lat = selected.centroid(maxError=1).coordinates().getInfo()
+    # Leaflet/Folium expects GeoJSON coordinates in WGS84. The bbox is built in
+    # EPSG:32633 so its padding is measured in metres; transform only the
+    # browser-facing geometry while keeping Earth Engine analysis in UTM.
+    bbox = (
+        selected.transform("EPSG:4326", maxError=1).getInfo()
+        if extent == "bbox"
+        else None
+    )
     return {
         "center": [lat, lon],
         "lake": lake.getInfo(),
-        "bbox": selected.getInfo() if extent == "bbox" else None,
+        "bbox": bbox,
         "area_km2": selected.area(maxError=1).divide(1e6).getInfo(),
     }
 

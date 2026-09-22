@@ -44,6 +44,12 @@ streamlit run app.py
 
 Choose the lake shoreline or surrounding bounding box, filter the 2025 scenes, then switch map layers with the layer control. NDCI appears only for Sentinel-2 scenes.
 
+The interactive map uses Folium/Leaflet without a third-party basemap. It shows
+only the Google Earth Engine imagery clipped to the selected lake or analysis
+extent, so no map-provider API key is needed. Earth Engine authentication is
+still required to query and render those scientific satellite layers; it does
+not require a Google Maps API key.
+
 The **Download image** panel prepares a 2048 px PNG of true colour or any index available for the selected sensor. It uses the current AOI, padding, display range, cloud mask, and water-mask setting. The basemap and vector outlines are intentionally omitted from the raster download.
 
 ## Deploy

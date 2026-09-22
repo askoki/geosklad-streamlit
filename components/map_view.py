@@ -5,13 +5,13 @@ import streamlit as st
 from streamlit_folium import st_folium
 
 
+MAP_RENDER_ID = "imagery_only_v2"
+
+
 def render_map(view, tiles, scene_id):
     m = folium.Map(
         location=view["center"], zoom_start=11, tiles=None, control_scale=True
     )
-    folium.TileLayer(
-        "CartoDB positron", control=False, cross_origin=True
-    ).add_to(m)
 
     for name, url in tiles.items():
         folium.TileLayer(
@@ -24,7 +24,7 @@ def render_map(view, tiles, scene_id):
             cross_origin=True,
         ).add_to(m)
 
-    folium.GeoJson(
+    lake_layer = folium.GeoJson(
         view["lake"],
         name="August 2025 shoreline",
         style_function=lambda _feature: {
@@ -33,8 +33,9 @@ def render_map(view, tiles, scene_id):
             "fill": False,
         },
     ).add_to(m)
+    requested_area = lake_layer
     if view["bbox"] is not None:
-        folium.GeoJson(
+        requested_area = folium.GeoJson(
             view["bbox"],
             name="Analysis extent",
             style_function=lambda _feature: {
@@ -44,6 +45,7 @@ def render_map(view, tiles, scene_id):
                 "fill": False,
             },
         ).add_to(m)
+    m.fit_bounds(requested_area.get_bounds(), padding=(20, 20))
     folium.LayerControl(collapsed=False).add_to(m)
     # Force a fresh Leaflet instance whenever visualization parameters change.
     # Otherwise the component can preserve stale client-side tile URLs.
@@ -53,5 +55,8 @@ def render_map(view, tiles, scene_id):
         height=600,
         use_container_width=True,
         returned_objects=[],
-        key=f"map_{scene_id}_{'bbox' if view['bbox'] else 'lake'}_{tile_signature}",
+        key=(
+            f"map_{MAP_RENDER_ID}_{scene_id}_"
+            f"{'bbox' if view['bbox'] else 'lake'}_{tile_signature}"
+        ),
     )
