@@ -5,12 +5,16 @@ import math
 import streamlit as st
 
 import resources
+from components.download import render_download
 from components.legend import render_legends
+from components.login import require_password
 from components.map_view import render_map
 from components.sidebar import render_sidebar
 from config import SENSOR_LABELS
 
 st.set_page_config(page_title="Vransko jezero indices", page_icon="🌊", layout="wide")
+
+require_password()
 
 st.title("Vransko jezero · 2025")
 st.caption("Explore vegetation, water, chlorophyll, and turbidity indicators from Sentinel-2 and Landsat 8/9.")
@@ -65,6 +69,7 @@ with st.spinner("Preparing map layers…"):
 
 render_map(view, tiles, asset_id.rsplit("/", 1)[-1])
 render_legends(controls["active_indices"], controls["ranges"])
+render_download(scene, controls)
 
 with st.expander("Methods and selected-scene means"):
     st.markdown(

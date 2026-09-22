@@ -4,3 +4,4 @@ folium>=0.16
 earthengine-api>=1.1
 pandas>=2.0
 branca>=0.7
+requests>=2.31

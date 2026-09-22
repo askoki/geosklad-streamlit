@@ -3,12 +3,21 @@
 import math
 
 import ee
+import requests
 import streamlit as st
 
 import aoi as aoi_module
 import catalog
 import gee
 from config import INDICES, TRUE_COLOR_VIS
+
+
+def _visualized_scene(asset_id, sensor, extent, pad_m, index, water_mask, vmin, vmax):
+    image = gee.load_scene(asset_id, sensor, aoi(extent, pad_m))
+    if index == "true_color":
+        return gee.true_color(image).visualize(**TRUE_COLOR_VIS)
+    vis = dict(INDICES[index]["vis"], min=float(vmin), max=float(vmax))
+    return gee.normalized_index(image, index, water_mask).visualize(**vis)
 
 
 @st.cache_resource(show_spinner="Connecting to Earth Engine…")
@@ -52,13 +61,27 @@ def scenes(extent, pad_m):
 
 @st.cache_data(ttl=1800, show_spinner=False)
 def index_tile(asset_id, sensor, extent, pad_m, index, water_mask, vmin, vmax):
-    image = gee.load_scene(asset_id, sensor, aoi(extent, pad_m))
-    if index == "true_color":
-        visualized = gee.true_color(image).visualize(**TRUE_COLOR_VIS)
-    else:
-        vis = dict(INDICES[index]["vis"], min=float(vmin), max=float(vmax))
-        visualized = gee.normalized_index(image, index, water_mask).visualize(**vis)
+    visualized = _visualized_scene(
+        asset_id, sensor, extent, pad_m, index, water_mask, vmin, vmax
+    )
     return gee.tile_layer_url(visualized, {})
+
+
+@st.cache_data(ttl=1800, show_spinner=False)
+def index_png(asset_id, sensor, extent, pad_m, index, water_mask, vmin, vmax):
+    """Return a 2048 px display-rendered PNG for the selected AOI and layer."""
+    geom = aoi(extent, pad_m)
+    visualized = _visualized_scene(
+        asset_id, sensor, extent, pad_m, index, water_mask, vmin, vmax
+    )
+    url = visualized.getThumbURL(
+        {"region": geom, "dimensions": 2048, "format": "png"}
+    )
+    response = requests.get(url, timeout=120)
+    response.raise_for_status()
+    if not response.content.startswith(b"\x89PNG\r\n\x1a\n"):
+        raise RuntimeError("Earth Engine did not return a PNG image")
+    return response.content
 
 
 @st.cache_data(ttl=1800, show_spinner="Calculating AOI statistics…")
