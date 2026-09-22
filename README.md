@@ -54,6 +54,13 @@ The **Download image** panel prepares a 2048 px PNG of true colour or any index 
 
 ## Deploy
 
-Deploy the repository as a Streamlit app with `app.py` as the entry point. Add the same `GEE_PROJECT` and `[gee_service_account]` values to the host's secrets manager, and configure `APP_PASSWORD` as an environment variable. Never commit `.streamlit/secrets.toml`; it is ignored by Git.
+`app.py` exports an ASGI-compatible Streamlit application, while `streamlit_app.py`
+contains the UI. This lets Streamlit hosts and Vercel use the same entry point.
+
+For Vercel, deploy the repository root and enable Fluid Compute so Streamlit's
+WebSocket connection can stay attached to the Python function. Configure
+`APP_PASSWORD`, `GEE_PROJECT`, and `GEE_SERVICE_ACCOUNT_JSON` as environment
+variables. The last value is the complete Google service-account JSON document.
+Never commit `.streamlit/secrets.toml`, which is ignored by Git.
 
 Scientific assumptions and caveats are documented in [METHODS.md](METHODS.md).

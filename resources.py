@@ -1,6 +1,7 @@
 """All Streamlit cache boundaries and EE round trips."""
 
 import math
+import os
 
 import ee
 import requests
@@ -28,9 +29,12 @@ def init_ee():
         secret_values = st.secrets.to_dict()
     except Exception:  # No secrets file is valid for locally authenticated EE.
         secret_values = {}
-    service_account = secret_values.get("gee_service_account")
+    service_account = secret_values.get("gee_service_account") or os.environ.get(
+        "GEE_SERVICE_ACCOUNT_JSON"
+    )
     gee.init_ee(
-        project=secret_values.get("GEE_PROJECT", "utomika"),
+        project=secret_values.get("GEE_PROJECT")
+        or os.environ.get("GEE_PROJECT", "utomika"),
         service_account_json=service_account,
     )
     return True
