@@ -16,6 +16,65 @@ def _scene_label(row):
     return f"{row['date'].isoformat()} · {row['sensor']} · cloud {cloud_text}"
 
 
+RANGE_BOUNDS = (-1.0, 1.0)
+RANGE_STEP = 0.01
+
+
+def _set_range(name, vmin, vmax):
+    st.session_state[f"range_{name}"] = (vmin, vmax)
+    st.session_state[f"range_{name}_min"] = vmin
+    st.session_state[f"range_{name}_max"] = vmax
+
+
+def _from_slider(name):
+    vmin, vmax = st.session_state[f"range_{name}"]
+    _set_range(name, vmin, vmax)
+
+
+def _from_inputs(name, edited):
+    lo, hi = RANGE_BOUNDS
+    vmin = round(st.session_state[f"range_{name}_min"], 2)
+    vmax = round(st.session_state[f"range_{name}_max"], 2)
+    if vmin >= vmax:
+        if edited == "min":
+            vmin = max(lo, vmax - RANGE_STEP)
+            vmax = round(vmin + RANGE_STEP, 2)
+        else:
+            vmax = min(hi, vmin + RANGE_STEP)
+            vmin = round(vmax - RANGE_STEP, 2)
+    _set_range(name, vmin, vmax)
+
+
+def _range_control(name, defaults):
+    """Range slider plus Min/Max number inputs kept in sync via session state."""
+    if f"range_{name}" not in st.session_state:
+        _set_range(name, float(defaults["min"]), float(defaults["max"]))
+    lo, hi = RANGE_BOUNDS
+    st.slider(
+        name,
+        lo,
+        hi,
+        step=RANGE_STEP,
+        key=f"range_{name}",
+        on_change=_from_slider,
+        args=(name,),
+    )
+    col_min, col_max = st.columns(2)
+    for column, edited in ((col_min, "min"), (col_max, "max")):
+        column.number_input(
+            f"{name} {edited}",
+            lo,
+            hi,
+            step=RANGE_STEP,
+            format="%.2f",
+            key=f"range_{name}_{edited}",
+            on_change=_from_inputs,
+            args=(name, edited),
+            label_visibility="collapsed",
+        )
+    return tuple(st.session_state[f"range_{name}"])
+
+
 def render_sidebar():
     with st.sidebar:
         st.header("View")
@@ -76,14 +135,7 @@ def render_sidebar():
         ranges = {}
         with st.expander("Display ranges"):
             for name in available:
-                defaults = INDICES[name]["vis"]
-                ranges[name] = st.slider(
-                    name,
-                    -1.0,
-                    1.0,
-                    (float(defaults["min"]), float(defaults["max"])),
-                    0.01,
-                )
+                ranges[name] = _range_control(name, INDICES[name]["vis"])
 
     return {
         "extent": extent,
